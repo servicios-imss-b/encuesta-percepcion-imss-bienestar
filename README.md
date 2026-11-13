@@ -23,7 +23,9 @@ La aplicación escucha en `PORT` (3000 por omisión).
 
 ## Google Sheets y GitHub Pages
 
-GitHub Pages usa `VITE_GOOGLE_APPS_SCRIPT_URL` para enviar solicitudes directamente al web app de Apps Script mediante un formulario oculto. Apps Script responde al iframe con `postMessage`, evitando CORS sin exponer un token en el navegador.
+GitHub Pages usa `VITE_GOOGLE_APPS_SCRIPT_URL` para enviar solicitudes directamente al web app de Apps Script mediante un formulario oculto a un iframe. Apps Script responde con `window.top.postMessage`, evitando CORS sin exponer un token en el navegador. El frontend acepta mensajes de `script.google.com` y de los subdominios `*.googleusercontent.com` donde Apps Script ejecuta el HTML.
+
+Importante: al modificar `apps-script/Code.gs` hay que publicar una **nueva versión** de la implementación (Implementar → Administrar implementaciones → editar → Nueva versión). Editar el código no actualiza la URL `/exec` que ya está publicada.
 
 En las propiedades privadas del proyecto de Apps Script configura `SPREADSHEET_ID`, `RESULTS_PASSWORD` y `PROGRESS_PASSWORD`. Despliega como aplicación web ejecutada por la cuenta propietaria y accesible para cualquiera; las consultas de resultados y avance siguen protegidas por sus contraseñas. El workflow de Pages ya incluye la URL pública del web app.
 

@@ -156,7 +156,7 @@ function bridgeOutput_(requestId, response) {
     "var binary=atob(\"" + envelope + "\");" +
     "var bytes=Uint8Array.from(binary,function(c){return c.charCodeAt(0);});" +
     "var message=JSON.parse(new TextDecoder().decode(bytes));" +
-    "window.parent.postMessage(message,\"*\");" +
+    "window.top.postMessage(message,\"*\");" +
     "</script></body></html>";
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

@@ -11,6 +11,20 @@ export const trpc = createTRPCReact<AppRouter>();
 const queryClient = new QueryClient();
 const appsScriptUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL?.trim() ?? "";
 
+// Apps Script ejecuta la respuesta en un iframe anidado dentro de un subdominio
+// aleatorio de script.googleusercontent.com, por eso no se puede comparar
+// contra un origen exacto.
+function isAppsScriptOrigin(origin: string) {
+  if (origin === "null") return true;
+  try {
+    const { protocol, hostname } = new URL(origin);
+    if (protocol !== "https:") return false;
+    return hostname === "script.google.com" || hostname.endsWith(".googleusercontent.com");
+  } catch {
+    return false;
+  }
+}
+
 function appsScriptLink(): TRPCLink<AppRouter> {
   return () => ({ op }) => observable((observer) => {
     const requestId = crypto.randomUUID();
@@ -44,7 +58,7 @@ function appsScriptLink(): TRPCLink<AppRouter> {
     };
 
     const onMessage = (event: MessageEvent) => {
-      if (event.source !== frame.contentWindow || event.data?.requestId !== requestId) return;
+      if (!isAppsScriptOrigin(event.origin) || event.data?.requestId !== requestId) return;
       cleanup();
       if (!event.data.response?.ok) {
         observer.error(TRPCClientError.from(new Error(event.data.response?.error ?? "Falló la solicitud a Apps Script.")));
@@ -54,10 +68,11 @@ function appsScriptLink(): TRPCLink<AppRouter> {
       observer.complete();
     };
 
+    // El primer arranque de Apps Script puede tardar más de 30 s.
     const timeoutId = window.setTimeout(() => {
       cleanup();
       observer.error(TRPCClientError.from(new Error("Apps Script no respondió a tiempo.")));
-    }, 30000);
+    }, 90000);
 
     window.addEventListener("message", onMessage);
     document.body.append(frame, form);
