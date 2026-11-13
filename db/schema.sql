@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS survey_responses (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  perfil VARCHAR(20) NOT NULL,
+  cve_entidad INT NOT NULL,
+  entidad VARCHAR(100) NOT NULL,
+  clues VARCHAR(20) NULL,
+  hospital VARCHAR(255) NULL,
+  categoria VARCHAR(50) NULL,
+  cve_region INT NULL,
+  region VARCHAR(100) NULL,
+  payload TEXT NOT NULL,
+  es_prueba BOOLEAN NOT NULL DEFAULT FALSE,
+  e_diferencia INT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

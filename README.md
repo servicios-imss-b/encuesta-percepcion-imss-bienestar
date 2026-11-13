@@ -1,41 +1,36 @@
 # Encuesta de percepción hospitalaria IMSS-Bienestar
 
-Repositorio privado para migración a otro proveedor.
+Aplicación full-stack para cuestionarios de directivos y coordinadores regionales, paneles de avance y resultados.
 
-## Respaldo completo
+El repositorio contiene el código y el catálogo de hospitales. Por privacidad, no contiene respuestas reales, `.env`, contraseñas, tokens, `node_modules` ni compilaciones. Los respaldos se conservan aparte.
 
-El paquete de migración incluye:
+## Tecnologías
 
-- Código fuente completo: React 19 + Vite + TypeScript + Tailwind + Hono + tRPC 11 + Drizzle ORM + MySQL.
-- Catálogo vigente: 593 hospitales y 216 coordinaciones.
-- 677 respuestas reales: 517 directores y 160 coordinadores.
-- Respaldo fiel en `datos/respuestas-percepcion.json` y versión tabular en CSV.
-- Esquema MySQL en `db/schema.sql` y esquema Drizzle en `db/schema.ts`.
+React 19, Vite, TypeScript, Tailwind CSS, Hono, tRPC, Drizzle ORM y MySQL. La API también puede usar Google Sheets a través de Apps Script.
 
-El paquete íntegro se entrega como `encuesta-percepcion-migracion.zip` en la conversación de Kimi, debido a que el conector de GitHub no admite la carga directa del archivo binario. No incluye `.env`, credenciales, `node_modules` ni compilaciones.
+## Desarrollo local
 
-## Puesta en marcha
+Requisitos: Node.js 20+.
 
-Requisitos: Node.js 20+ y MySQL 8+.
+1. Ejecuta `npm install`.
+2. Copia `.env.example` a `.env` y configura un backend: `DATABASE_URL`, o bien `GOOGLE_APPS_SCRIPT_URL` y `GOOGLE_APPS_SCRIPT_TOKEN`.
+3. Configura `RESULTS_PASSWORD` y `PROGRESS_PASSWORD` en `.env`.
+4. Ejecuta `npm run check` y `npm run build`.
+5. Inicia en desarrollo con `npm run dev`, o con `npm start` tras compilar.
 
-1. Descomprimir el paquete.
-2. Crear una base MySQL vacía y ejecutar `db/schema.sql`.
-3. Copiar `.env.example` a `.env` y configurar `DATABASE_URL`.
-4. Ejecutar `npm install`.
-5. Validar con `npm run check` y compilar con `npm run build`.
-6. Iniciar con `npm start`.
+La aplicación escucha en `PORT` (3000 por omisión).
 
-El servidor escucha en `PORT` (3000 por omisión).
+## Google Sheets
 
-## Validación del respaldo
+El archivo `apps-script/Code.gs` contiene el endpoint. Debe desplegarse como aplicación web con acceso para recibir solicitudes del servidor. Guarda `SPREADSHEET_ID` y `API_TOKEN` en las propiedades privadas del proyecto de Apps Script. Configura el mismo `API_TOKEN` como `GOOGLE_APPS_SCRIPT_TOKEN` solo en el entorno del servidor. No subas `.env` ni incluyas secretos o el ID de la hoja en el frontend o el repositorio.
 
-Al importar, comprobar 677 filas, 517 directores y 160 coordinadores; todos con `esPrueba = false`. El JSON conserva el `payload` completo por pregunta y es la fuente recomendada para restauración.
+## GitHub Pages
+
+GitHub Pages sirve archivos estáticos; no ejecuta el backend Hono. Por tanto, publicar ahí el frontend no hace funcionar por sí solo el envío de encuestas ni los paneles. Para esos flujos se necesita alojar también el backend Node.js y configurar sus variables de entorno en ese proveedor.
 
 ## Rutas
 
 - `/`: portada.
 - `/encuesta`: cuestionario.
-- `/avance`: avance.
+- `/avance`: panel de avance.
 - `/resultados`: resultados y exportaciones.
-
-Las contraseñas operativas deben trasladarse por un canal seguro antes de abrir el sitio al público.
