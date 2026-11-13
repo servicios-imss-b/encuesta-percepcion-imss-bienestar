@@ -1,9 +1,15 @@
 const SPREADSHEET_ID_PROPERTY = "SPREADSHEET_ID";
 const SHEET_NAME = "Hoja 1";
 const API_TOKEN_PROPERTY = "API_TOKEN";
+const PANEL_TOKEN_PREFIX = "PANEL_TOKEN_";
+const PANEL_TOKEN_TTL_SECONDS = 21600;
 const PAYLOAD_PREFIX = "payload.";
 
 function doPost(event) {
+  if (event.parameter && event.parameter.bridgeRequest) {
+    return handleBridgeRequest_(event.parameter.bridgeRequest);
+  }
+
   try {
     const request = JSON.parse(event.postData.contents || "{}");
     const expectedToken = PropertiesService.getScriptProperties().getProperty(API_TOKEN_PROPERTY);
@@ -55,14 +61,116 @@ function doPost(event) {
   }
 }
 
+function handleBridgeRequest_(serializedRequest) {
+  let request = {};
+  try {
+    request = JSON.parse(serializedRequest || "{}");
+    const data = dispatchBridgeRequest_(request);
+    return bridgeOutput_(request.requestId, { ok: true, data: data });
+  } catch (error) {
+    return bridgeOutput_(request.requestId, {
+      ok: false,
+      error: String(error && error.message ? error.message : error),
+    });
+  }
+}
+
+function dispatchBridgeRequest_(request) {
+  const input = request.input || {};
+  switch (request.path) {
+    case "ping":
+      return { ok: true, ts: Date.now() };
+    case "survey.submit":
+      return appendResponse_(input);
+    case "survey.panelAuth":
+      return authenticatePanel_(input);
+    case "survey.list":
+      requirePanel_(input.token, "resultados");
+      return readResponses_().sort(compareResponses_);
+    case "survey.count": {
+      requirePanel_(input.token, "resultados");
+      const responses = readResponses_();
+      return {
+        total: responses.length,
+        directores: responses.filter((response) => response.perfil === "director").length,
+        regionales: responses.filter((response) => response.perfil === "regional").length,
+      };
+    }
+    case "survey.responded":
+      requirePanel_(input.token, "avance");
+      return readResponses_()
+        .filter((response) => !response.esPrueba)
+        .sort(compareResponses_)
+        .map((response) => ({
+          id: response.id,
+          perfil: response.perfil,
+          clues: response.clues,
+          hospital: response.hospital,
+          entidad: response.entidad,
+          cveEntidad: response.cveEntidad,
+          categoria: response.categoria,
+          cveRegion: response.cveRegion,
+          region: response.region,
+          createdAt: response.createdAt,
+        }));
+    default:
+      throw new Error("Acción desconocida.");
+  }
+}
+
+function authenticatePanel_(input) {
+  const panel = input.panel;
+  const propertyName = panel === "resultados"
+    ? "RESULTS_PASSWORD"
+    : panel === "avance"
+      ? "PROGRESS_PASSWORD"
+      : "";
+  const expectedPassword = propertyName
+    ? PropertiesService.getScriptProperties().getProperty(propertyName)
+    : "";
+  if (!expectedPassword || input.password !== expectedPassword) {
+    throw new Error("Contraseña incorrecta.");
+  }
+
+  const token = Utilities.getUuid();
+  CacheService.getScriptCache().put(PANEL_TOKEN_PREFIX + token, panel, PANEL_TOKEN_TTL_SECONDS);
+  return { token: token, panel: panel };
+}
+
+function requirePanel_(token, panel) {
+  const activePanel = token
+    ? CacheService.getScriptCache().get(PANEL_TOKEN_PREFIX + token)
+    : "";
+  if (activePanel !== panel) {
+    throw new Error("Acceso no autorizado. Inicie sesión de nuevo.");
+  }
+}
+
+function bridgeOutput_(requestId, response) {
+  const envelope = Utilities.base64Encode(
+    JSON.stringify({ requestId: requestId || "", response: response }),
+    Utilities.Charset.UTF_8,
+  );
+  const html = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body>" +
+    "<script>" +
+    "var binary=atob(\"" + envelope + "\");" +
+    "var bytes=Uint8Array.from(binary,function(c){return c.charCodeAt(0);});" +
+    "var message=JSON.parse(new TextDecoder().decode(bytes));" +
+    "window.parent.postMessage(message,\"*\");" +
+    "</script></body></html>";
+  return HtmlService.createHtmlOutput(html)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
 function verifySetup() {
   const sheet = responseSheet_();
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
   if (headers.length !== 60 || headers[0] !== "id" || headers[59] !== "payload.v2") {
     throw new Error("La hoja no coincide con los 60 encabezados esperados.");
   }
-  if (!PropertiesService.getScriptProperties().getProperty(API_TOKEN_PROPERTY)) {
-    throw new Error("Configura la propiedad de script API_TOKEN antes de desplegar.");
+  const properties = PropertiesService.getScriptProperties();
+  if (!properties.getProperty("RESULTS_PASSWORD") || !properties.getProperty("PROGRESS_PASSWORD")) {
+    throw new Error("Configura RESULTS_PASSWORD y PROGRESS_PASSWORD como propiedades del script.");
   }
   return "Conexión y encabezados verificados.";
 }

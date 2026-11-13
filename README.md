@@ -21,13 +21,13 @@ Requisitos: Node.js 20+.
 
 La aplicación escucha en `PORT` (3000 por omisión).
 
-## Google Sheets
+## Google Sheets y GitHub Pages
 
-El archivo `apps-script/Code.gs` contiene el endpoint. Debe desplegarse como aplicación web con acceso para recibir solicitudes del servidor. Guarda `SPREADSHEET_ID` y `API_TOKEN` en las propiedades privadas del proyecto de Apps Script. Configura el mismo `API_TOKEN` como `GOOGLE_APPS_SCRIPT_TOKEN` solo en el entorno del servidor. No subas `.env` ni incluyas secretos o el ID de la hoja en el frontend o el repositorio.
+GitHub Pages usa `VITE_GOOGLE_APPS_SCRIPT_URL` para enviar solicitudes directamente al web app de Apps Script mediante un formulario oculto. Apps Script responde al iframe con `postMessage`, evitando CORS sin exponer un token en el navegador.
 
-## GitHub Pages
+En las propiedades privadas del proyecto de Apps Script configura `SPREADSHEET_ID`, `RESULTS_PASSWORD` y `PROGRESS_PASSWORD`. Despliega como aplicación web ejecutada por la cuenta propietaria y accesible para cualquiera; las consultas de resultados y avance siguen protegidas por sus contraseñas. El workflow de Pages ya incluye la URL pública del web app.
 
-GitHub Pages sirve archivos estáticos; no ejecuta el backend Hono. Publica el backend Node.js en otro proveedor, agrega `VITE_API_BASE_URL` como variable del repositorio para GitHub Actions y configura `CORS_ORIGIN` en el backend con `https://servicios-imss-b.github.io`. Sin esas variables, el frontend muestra un error de configuración en vez de intentar interpretar el 404 HTML como JSON.
+Para desarrollo local también puede usarse la API Hono con las variables de `GOOGLE_APPS_SCRIPT_URL` y `GOOGLE_APPS_SCRIPT_TOKEN` del `.env`. No subas `.env` ni incluyas contraseñas, tokens o el ID de la hoja en el frontend.
 
 ## Rutas
 
