@@ -5,6 +5,32 @@ const PANEL_TOKEN_PREFIX = "PANEL_TOKEN_";
 const PANEL_TOKEN_TTL_SECONDS = 21600;
 const PAYLOAD_PREFIX = "payload.";
 
+function doGet(event) {
+  const callback = String(event.parameter.callback || "");
+  if (!/^__appsScriptCallback_[a-f0-9]+$/.test(callback)) {
+    return ContentService.createTextOutput("Invalid callback.")
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  let request = {};
+  let envelope;
+  try {
+    request = JSON.parse(event.parameter.bridgeRequest || "{}");
+    envelope = {
+      requestId: request.requestId || "",
+      response: { ok: true, data: dispatchBridgeRequest_(request) },
+    };
+  } catch (error) {
+    envelope = {
+      requestId: request.requestId || "",
+      response: { ok: false, error: String(error && error.message ? error.message : error) },
+    };
+  }
+
+  return ContentService.createTextOutput(callback + "(" + JSON.stringify(envelope) + ");")
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
 function doPost(event) {
   if (event.parameter && event.parameter.bridgeRequest) {
     return handleBridgeRequest_(event.parameter.bridgeRequest);
