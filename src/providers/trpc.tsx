@@ -11,15 +11,11 @@ export const trpc = createTRPCReact<AppRouter>();
 const queryClient = new QueryClient();
 const appsScriptUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL?.trim() ?? "";
 
-// Apps Script ejecuta la respuesta en un iframe anidado dentro de un subdominio
-// aleatorio de script.googleusercontent.com, por eso no se puede comparar
-// contra un origen exacto.
 function isAppsScriptOrigin(origin: string) {
-  if (origin === "null") return true;
   try {
-    const { protocol, hostname } = new URL(origin);
-    if (protocol !== "https:") return false;
-    return hostname === "script.google.com" || hostname.endsWith(".googleusercontent.com");
+    const url = new URL(origin);
+    return url.protocol === "https:" &&
+      (url.hostname === "script.google.com" || url.hostname.endsWith(".googleusercontent.com"));
   } catch {
     return false;
   }
@@ -51,28 +47,32 @@ function appsScriptLink(): TRPCLink<AppRouter> {
     form.appendChild(requestInput);
 
     const cleanup = () => {
-      window.removeEventListener("message", onMessage);
       window.clearTimeout(timeoutId);
+      window.removeEventListener("message", onMessage);
       form.remove();
       frame.remove();
     };
 
     const onMessage = (event: MessageEvent) => {
-      if (!isAppsScriptOrigin(event.origin) || event.data?.requestId !== requestId) return;
+      if (!isAppsScriptOrigin(event.origin)) return;
+      const envelope = event.data as {
+      requestId: string;
+      response?: { ok?: boolean; data?: unknown; error?: string };
+      };
+      if (envelope.requestId !== requestId) return;
       cleanup();
-      if (!event.data.response?.ok) {
-        observer.error(TRPCClientError.from(new Error(event.data.response?.error ?? "Falló la solicitud a Apps Script.")));
+      if (!envelope.response?.ok) {
+        observer.error(TRPCClientError.from(new Error(envelope.response?.error ?? "Falló la solicitud a Apps Script.")));
         return;
       }
-      observer.next({ result: { data: event.data.response.data } } as Parameters<typeof observer.next>[0]);
+      observer.next({ result: { data: envelope.response.data } } as Parameters<typeof observer.next>[0]);
       observer.complete();
     };
 
-    // El primer arranque de Apps Script puede tardar más de 30 s.
     const timeoutId = window.setTimeout(() => {
       cleanup();
       observer.error(TRPCClientError.from(new Error("Apps Script no respondió a tiempo.")));
-    }, 90000);
+    }, 30000);
 
     window.addEventListener("message", onMessage);
     document.body.append(frame, form);

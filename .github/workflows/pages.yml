@@ -33,7 +33,7 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /encuesta-percepcion-imss-bienestar/
-          VITE_GOOGLE_APPS_SCRIPT_URL: https://script.google.com/macros/s/AKfycbyRvS7NywxdS7ETbRO8PCmxEwBTfY8BMCKQ71qBggKdR_H7v9_20aQY6TYCt9wflUN95A/exec
+          VITE_GOOGLE_APPS_SCRIPT_URL: https://script.google.com/macros/s/AKfycbwnH-Wzx-ualW988oM5yPa3kWN__qlJJcbsXyIWM1sP13lOqXqO7M_q2L0FAMCGtljRHA/exec
       - name: Add SPA fallback
         run: cp dist/public/index.html dist/public/404.html
       - name: Upload Pages artifact
