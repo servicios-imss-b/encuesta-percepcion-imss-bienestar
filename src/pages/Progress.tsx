@@ -71,6 +71,7 @@ export default function Progress() {
   useEffect(() => {
     if (token && error) {
       sessionStorage.removeItem("admin_token_avance");
+      setLoginError(error.message);
       setToken("");
     }
   }, [token, error]);

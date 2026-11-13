@@ -6,6 +6,10 @@ const googleAppsScriptToken = process.env.GOOGLE_APPS_SCRIPT_TOKEN ?? "";
 const databaseUrl = process.env.DATABASE_URL ?? "";
 const resultsPassword = process.env.RESULTS_PASSWORD ?? "";
 const progressPassword = process.env.PROGRESS_PASSWORD ?? "";
+const corsOrigins = (process.env.CORS_ORIGIN ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 if (isProduction && !googleAppsScriptUrl && !databaseUrl) {
   throw new Error("Configure DATABASE_URL or GOOGLE_APPS_SCRIPT_URL.");
@@ -24,4 +28,5 @@ export const env = {
   googleAppsScriptToken,
   resultsPassword,
   progressPassword,
+  corsOrigins,
 };

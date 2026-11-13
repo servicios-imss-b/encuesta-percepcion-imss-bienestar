@@ -15,8 +15,9 @@ Requisitos: Node.js 20+.
 1. Ejecuta `npm install`.
 2. Copia `.env.example` a `.env` y configura un backend: `DATABASE_URL`, o bien `GOOGLE_APPS_SCRIPT_URL` y `GOOGLE_APPS_SCRIPT_TOKEN`.
 3. Configura `RESULTS_PASSWORD` y `PROGRESS_PASSWORD` en `.env`.
-4. Ejecuta `npm run check` y `npm run build`.
-5. Inicia en desarrollo con `npm run dev`, o con `npm start` tras compilar.
+4. Si el frontend y el backend se alojan en dominios distintos, configura `CORS_ORIGIN` con el origen del frontend.
+5. Ejecuta `npm run check` y `npm run build`.
+6. Inicia en desarrollo con `npm run dev`, o con `npm start` tras compilar.
 
 La aplicación escucha en `PORT` (3000 por omisión).
 
@@ -26,7 +27,7 @@ El archivo `apps-script/Code.gs` contiene el endpoint. Debe desplegarse como apl
 
 ## GitHub Pages
 
-GitHub Pages sirve archivos estáticos; no ejecuta el backend Hono. Por tanto, publicar ahí el frontend no hace funcionar por sí solo el envío de encuestas ni los paneles. Para esos flujos se necesita alojar también el backend Node.js y configurar sus variables de entorno en ese proveedor.
+GitHub Pages sirve archivos estáticos; no ejecuta el backend Hono. Publica el backend Node.js en otro proveedor, agrega `VITE_API_BASE_URL` como variable del repositorio para GitHub Actions y configura `CORS_ORIGIN` en el backend con `https://servicios-imss-b.github.io`. Sin esas variables, el frontend muestra un error de configuración en vez de intentar interpretar el 404 HTML como JSON.
 
 ## Rutas
 

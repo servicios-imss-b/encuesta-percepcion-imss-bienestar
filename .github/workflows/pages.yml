@@ -33,6 +33,7 @@ jobs:
         run: npm run build
         env:
           VITE_BASE_PATH: /encuesta-percepcion-imss-bienestar/
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
       - name: Add SPA fallback
         run: cp dist/public/index.html dist/public/404.html
       - name: Upload Pages artifact

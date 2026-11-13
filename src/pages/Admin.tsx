@@ -125,6 +125,7 @@ export default function Admin() {
   useEffect(() => {
     if (token && error) {
       sessionStorage.removeItem("admin_token_resultados");
+      setLoginError(error.message);
       setToken("");
     }
   }, [token, error]);

@@ -8,16 +8,29 @@ import type { ReactNode } from "react";
 export const trpc = createTRPCReact<AppRouter>();
 
 const queryClient = new QueryClient();
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, "") ?? "";
+const isPagesWithoutApi = import.meta.env.PROD && import.meta.env.BASE_URL !== "/" && !apiBaseUrl;
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: apiBaseUrl ? `${apiBaseUrl}/api/trpc` : "/api/trpc",
       transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
+      async fetch(input, init) {
+        if (isPagesWithoutApi) {
+          throw new Error("El backend no está configurado para GitHub Pages. Define VITE_API_BASE_URL con la URL del servidor Node.");
+        }
+
+        const response = await globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
         });
+
+        const contentType = response.headers.get("content-type") ?? "";
+        if (!contentType.includes("application/json")) {
+          throw new Error("El backend devolvió una página HTML en vez de JSON. Verifica VITE_API_BASE_URL y que el servidor esté activo.");
+        }
+
+        return response;
       },
     }),
   ],
